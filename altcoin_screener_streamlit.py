@@ -1,3 +1,5 @@
+# altcoin_screener_streamlit.py
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -9,10 +11,10 @@ from rhythmic_analyzer import analyze_with_rhythmic
 import re
 import numpy as np
 
+# --- CONFIG & CONSTANTS ---
 st.set_page_config(page_title="Altcoin Screener", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 
 API_URL  = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing"
-DATA_DIR = "data"
 PER_PAGE = 100
 
 RAW_COLS = {'symbol': 'symbol', 'name': 'name', 'price': 'price', 'volume24h': 'volume24h', 'marketCap': 'marketCap', 'percentChange7d': 'percentChange7d'}
@@ -26,47 +28,81 @@ PRESETS = {
     "Aggressive": {'min_market_cap': 1e6, 'max_market_cap': 100e6, 'min_volume_mc': 0.30, 'max_volume_mc': 2.00, 'min_change_7d': -8.0, 'max_change_7d': 25.0}
 }
 
-def fetch_total_coins():
-    r = requests.get(API_URL, params={'start':1,'limit':1})
-    r.raise_for_status()
-    return int(r.json()['data']['totalCount'])
 
-def fetch_page(start=1, limit=PER_PAGE):
-    params = {'start': start, 'limit': limit, 'sortBy':'market_cap','sortType':'desc'}
-    r = requests.get(API_URL, params=params)
-    r.raise_for_status()
-    return r.json()['data']['cryptoCurrencyList']
+# --- DATA FETCHING & PROCESSING LOGIC ---
 
-def save_dataframe(df):
-    os.makedirs(DATA_DIR, exist_ok=True)
-    today = datetime.now().strftime("%Y-%m-%d")
-    df.to_csv(os.path.join(DATA_DIR, f"{today}.csv"), index=False)
+@st.cache_data(ttl=14400) # Cache data for 4 hours (14400 seconds)
+def load_or_fetch_data():
+    """
+    This function fetches all data from the API and is cached by Streamlit.
+    It only runs if the cache is empty or expired.
+    """
+    def fetch_total_coins():
+        r = requests.get(API_URL, params={'start':1,'limit':1})
+        r.raise_for_status()
+        return int(r.json()['data']['totalCount'])
 
-@st.cache_data
-def load_dataframe():
-    today = datetime.now().strftime("%Y-%m-%d")
-    path  = os.path.join(DATA_DIR, f"{today}.csv")
-    return pd.read_csv(path) if os.path.exists(path) else None
+    def fetch_page(start=1, limit=PER_PAGE):
+        params = {'start': start, 'limit': limit, 'sortBy':'market_cap','sortType':'desc'}
+        r = requests.get(API_URL, params=params)
+        r.raise_for_status()
+        return r.json()['data']['cryptoCurrencyList']
+
+    with st.spinner("در حال واکشی تازه‌ترین داده‌ها از سرور... (این فرآیند ممکن است چند دقیقه طول بکشد و فقط هر ۴ ساعت یکبار انجام می‌شود)"):
+        try:
+            total_coins_to_fetch = fetch_total_coins()
+        except Exception as e:
+            st.error(f"خطا در دریافت تعداد کل کوین‌ها: {e}")
+            return None
+        
+        rows = []
+        # We limit the fetch to 10000 to be safe with the API on a server
+        fetch_limit = min(total_coins_to_fetch, 10000) 
+        start_index = 1
+        
+        while start_index <= fetch_limit:
+            try:
+                lst = fetch_page(start=start_index, limit=PER_PAGE)
+                if not lst: break
+                for c in lst:
+                    q = c.get('quotes', [{}])[0]
+                    rows.append({
+                        RAW_COLS['symbol']: c.get('symbol'), RAW_COLS['name']: c.get('name'),
+                        RAW_COLS['price']: q.get('price', None), RAW_COLS['volume24h']: q.get('volume24h', None),
+                        RAW_COLS['marketCap']: q.get('marketCap', None), RAW_COLS['percentChange7d']: q.get('percentChange7d', None)
+                    })
+                start_index += PER_PAGE
+                time.sleep(0.5)
+            except Exception as e:
+                st.error(f"خطا در واکشی: {e}")
+                break
+    
+    return pd.DataFrame(rows)
 
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame | None:
-    if df is None: return None
+    if df is None or df.empty: return None
     processed_df = df.copy()
-    cols_to_rename = {k: v for k, v in RENAME_MAP.items() if k in processed_df.columns}
-    processed_df.rename(columns=cols_to_rename, inplace=True)
+    processed_df.rename(columns=RENAME_MAP, inplace=True)
+    
     missing_cols = [col for col in NUMERIC_COLS if col not in processed_df.columns]
     if missing_cols:
-        st.error(f"فایل داده ناقص است: `{missing_cols}`.")
+        st.error(f"داده‌های واکشی شده ستون‌های مورد نیاز را ندارند: `{missing_cols}`.")
         return None
+        
     for col in NUMERIC_COLS:
         processed_df[col] = pd.to_numeric(processed_df[col], errors='coerce')
+    
     critical_cols_for_zero_check = [PROCESSED_COLS['market_cap'], PROCESSED_COLS['volume_24h']]
     for col in critical_cols_for_zero_check:
-        if col in processed_df.columns:
-            processed_df[col] = processed_df[col].replace(0, np.nan)
+        processed_df[col] = processed_df[col].replace(0, np.nan)
+
     processed_df.dropna(subset=NUMERIC_COLS, inplace=True)
     return processed_df
 
+# --- UI HELPER FUNCTIONS ---
+
 def style_dataframe(df):
+    # ... (same as before)
     def _color_change(val):
         if not isinstance(val, (int, float)): return ''
         color = '#4CAF50' if val > 0 else ('#F44336' if val < 0 else 'white')
@@ -83,12 +119,15 @@ def style_dataframe(df):
     return styled.format({k: v for k, v in formats.items() if k in df.columns})
 
 def make_name_clickable(df):
+    # ... (same as before)
     df_display = df.copy()
     if 'name' not in df_display.columns: return df_display
     def _create_slug(name):
         return re.sub(r'[^a-zA-Z0-9 -]', '', str(name)).strip().lower().replace(' ', '-')
     df_display['name'] = df_display.apply(lambda row: f'<a target="_blank" href="https://coinmarketcap.com/currencies/{_create_slug(row["name"])}/">{row["name"]}</a>', axis=1)
     return df_display
+
+# --- MAIN APP UI ---
 
 st.title("📈 داشبورد غربال‌گری و تحلیل ریتمیک آلت‌کوین‌ها")
 
@@ -104,63 +143,24 @@ with st.sidebar.expander("⚙️ تنظیمات دستی"):
     min_ch7 = st.slider("حداقل تغییرات ۷ روزه (%)", -50.0, 50.0, p['min_change_7d'])
     max_ch7 = st.slider("حداکثر تغییرات ۷ روزه (%)", -50.0, 100.0, p['max_change_7d'])
 
-st.sidebar.markdown("---")
+# --- Load, Process, and Display Data ---
 
-if st.sidebar.button("🔄 واکشی داده‌های جدید", type="primary"):
-    with st.spinner("در حال محاسبه تعداد کل ارزها..."):
-        try:
-            total_coins_to_fetch = fetch_total_coins()
-        except Exception as e:
-            st.error(f"خطا در دریافت تعداد کل کوین‌ها: {e}")
-            st.stop()
-    
-    rows, fetched_count = [], 0
-    bar = st.sidebar.progress(0.0, "شروع واکشی...")
-    start_index = 1
-
-    while fetched_count < total_coins_to_fetch:
-        try:
-            lst = fetch_page(start=start_index, limit=PER_PAGE)
-            if not lst: break
-            for c in lst:
-                q = c.get('quotes', [{}])[0]
-                rows.append({
-                    RAW_COLS['symbol']: c.get('symbol'), RAW_COLS['name']: c.get('name'),
-                    RAW_COLS['price']: q.get('price', None), RAW_COLS['volume24h']: q.get('volume24h', None),
-                    RAW_COLS['marketCap']: q.get('marketCap', None), RAW_COLS['percentChange7d']: q.get('percentChange7d', None)
-                })
-            fetched_count += len(lst)
-            if start_index > total_coins_to_fetch : break
-            start_index += PER_PAGE
-            bar.progress(min(fetched_count / total_coins_to_fetch, 1.0), f"واکشی {fetched_count}/{total_coins_to_fetch} ارز...")
-            time.sleep(0.5)
-        except Exception as e:
-            st.error(f"خطا در واکشی: {e}")
-            break
-            
-    bar.progress(1.0, "واکشی کامل شد!")
-            
-    if rows:
-        save_dataframe(pd.DataFrame(rows))
-        st.sidebar.success("داده‌ها ذخیره شد! صفحه در حال بارگذاری مجدد است.")
-        time.sleep(2)
-        st.rerun()
-
-raw_df = load_dataframe()
-if raw_df is None:
-    st.info("📊 داده‌ای برای نمایش وجود ندارد. لطفاً با استفاده از دکمه در سایدبار، داده‌های جدید را واکشی کنید.")
+raw_df = load_or_fetch_data()
+if raw_df is None or raw_df.empty:
+    st.error("خطا در واکشی داده‌ها. لطفاً صفحه را رفرش کنید یا بعداً دوباره تلاش کنید.")
     st.stop()
-
-st.sidebar.markdown("---")
-st.sidebar.header("آمار پردازش داده")
-st.sidebar.metric("تعداد کل ارزهای واکشی شده (خام)", f"{len(raw_df):,}")
 
 df = process_dataframe(raw_df)
-if df is None:
+if df is None or df.empty:
+    st.warning("هیچ ارز معتبری برای تحلیل یافت نشد. این ممکن است به دلیل مشکل در منبع داده باشد.")
     st.stop()
-
+    
+st.sidebar.markdown("---")
+st.sidebar.header("آمار داده‌ها")
+st.sidebar.metric("تعداد کل ارزهای واکشی شده (خام)", f"{len(raw_df):,}")
 st.sidebar.metric("تعداد ارزهای معتبر (پس از پاکسازی)", f"{len(df):,}")
 
+# The rest of the app logic...
 filter_params = {'min_market_cap': min_mc, 'max_market_cap': max_mc, 'min_volume_mc': min_vmc, 'max_volume_mc': max_vmc, 'min_change_7d': min_ch7, 'max_change_7d': max_ch7}
 df['volume_mc_ratio'] = df[PROCESSED_COLS['volume_24h']] / (df[PROCESSED_COLS['market_cap']] + 1e-9)
 filtered = df[(df[PROCESSED_COLS['market_cap']] >= filter_params['min_market_cap']) & (df[PROCESSED_COLS['market_cap']] <= filter_params['max_market_cap']) & (df['volume_mc_ratio'] >= filter_params['min_volume_mc']) & (df['volume_mc_ratio'] <= filter_params['max_volume_mc']) & (df[PROCESSED_COLS['percent_change_7d']] >= filter_params['min_change_7d']) & (df[PROCESSED_COLS['percent_change_7d']] <= filter_params['max_change_7d'])]
