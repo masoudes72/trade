@@ -14,7 +14,7 @@ import numpy as np
 # --- PAGE CONFIG (Set once at the top) ---
 st.set_page_config(page_title="Crypto Screener", page_icon="📈", layout="wide")
 
-# --- AUTHENTICATION LOGIC WITH IMPROVED CSS ---
+# --- AUTHENTICATION LOGIC WITH STABLE CSS ---
 
 def check_password():
     """Returns `True` if the user is authenticated."""
@@ -38,12 +38,13 @@ def check_password():
 
     if not st.session_state.get("authenticated", False):
         
-        # --- Improved CSS for perfect centering ---
+        # --- Stable CSS targeting Streamlit's default containers ---
         st.markdown("""
         <style>
-            /* Hide Streamlit's default elements */
+            /* Hide Streamlit's default elements for a cleaner look */
             #MainMenu, footer, header {visibility: hidden;}
-            /* Make main container a full-screen flexbox */
+            
+            /* Make the main container a full-screen flexbox to center content */
             [data-testid="stAppViewContainer"] > .main {
                 display: flex;
                 flex-direction: column;
@@ -53,24 +54,37 @@ def check_password():
                 height: 100vh;
                 background-color: #0d1b2a;
             }
-            /* The login card container */
-            .login-container {
+            
+            /* Style the container Streamlit creates for the content */
+            div[data-testid="stVerticalBlock"] {
                 background-color: #1b263b;
-                padding: 40px;
+                padding: 40px 30px;
                 border-radius: 16px;
                 width: 100%;
                 max-width: 400px;
-                text-align: center;
-                box-shadow: 0 0 20px rgba(0,0,0,0.3);
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             }
-            /* Title inside the card */
-            .login-container h2 {
+            
+            /* Center the image within its Streamlit container */
+            div[data-testid="stImage"] {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            
+            /* Title styling */
+            h2 {
                 color: #e0a96d;
-                margin-top: 20px;
+                text-align: center;
+                margin-top: -10px; /* Adjust space after image */
                 margin-bottom: 30px;
                 font-size: 24px;
             }
+            
             /* Input fields styling */
+            div[data-testid="stTextInput"] {
+                margin-bottom: 10px;
+            }
             input {
                 background-color: #415a77 !important;
                 color: white !important;
@@ -78,8 +92,8 @@ def check_password():
                 border: none !important;
                 padding: 12px !important;
                 font-size: 16px !important;
-                margin: 5px 0;
             }
+            
             /* Button styling */
             div.stButton > button {
                 width: 100%;
@@ -90,18 +104,24 @@ def check_password():
                 font-size: 16px;
                 font-weight: bold;
                 border-radius: 8px;
-                cursor: pointer;
                 margin-top: 20px;
             }
+            
             /* Footer styling */
-            .login-footer { margin-top: 20px; color: #cbd5e1; font-size: 14px; }
-            .login-footer a { color: #f0bb7d; text-decoration: none; }
+            .login-footer {
+                margin-top: 20px;
+                color: #cbd5e1;
+                font-size: 14px;
+                text-align: center;
+            }
+            .login-footer a {
+                color: #f0bb7d;
+                text-decoration: none;
+            }
         </style>
         """, unsafe_allow_html=True)
 
-        # --- Login Form UI wrapped in a div for styling ---
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        
+        # --- Simple, Sequential UI Layout ---
         st.image("logo.png", width=100)
         st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
@@ -117,7 +137,6 @@ def check_password():
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
 
 # --- MAIN APP LOGIC (The Screener) ---
@@ -126,7 +145,6 @@ def main_app():
     
     st.title("📈 داشبورد غربال‌گری و تحلیل ریتمیک آلت‌کوین‌ها")
     
-    # --- All the constants and functions for the main app ---
     API_URL  = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing"
     PER_PAGE = 100
 
@@ -277,7 +295,6 @@ def main_app():
                 else: st.write(style_dataframe(make_name_clickable(passed)).to_html(escape=False), unsafe_allow_html=True)
             else:
                 st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
-
 
 # --- SCRIPT EXECUTION STARTS HERE ---
 if "authenticated" not in st.session_state:
