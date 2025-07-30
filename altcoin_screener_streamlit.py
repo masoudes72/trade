@@ -14,7 +14,7 @@ import numpy as np
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Crypto Screener Login", page_icon="📈", layout="centered")
 
-# --- AUTHENTICATION LOGIC WITH CUSTOM UI ---
+# --- AUTHENTICATION LOGIC WITH NEW CUSTOM UI ---
 
 def check_password():
     """Returns `True` if the user is authenticated."""
@@ -28,6 +28,7 @@ def check_password():
                 and st.session_state["password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["username"])]
             ):
                 st.session_state["authenticated"] = True
+                st.rerun() # Rerun to show the main app
             else:
                 st.session_state["authenticated"] = False
                 st.error("نام کاربری یا رمز عبور اشتباه است")
@@ -38,78 +39,84 @@ def check_password():
     # If user is not authenticated, show the login page
     if not st.session_state.get("authenticated", False):
         
-        # Custom CSS from your HTML, adapted for Streamlit
-        st.markdown(f"""
+        # --- Improved CSS for better centering and styling ---
+        st.markdown("""
         <style>
-            * {{ box-sizing: border-box; }}
-            body {{
+            * { box-sizing: border-box; }
+            body {
                 margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background-color: #0d1b2a;
-            }}
-            [data-testid="stAppViewContainer"] > .main {{
+            }
+            /* Main container to center the form vertically and horizontally */
+            [data-testid="stAppViewContainer"] > .main {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                padding: 2rem;
-            }}
-            div[data-testid="stVerticalBlock"] {{
+                width: 100%;
+                height: 100vh;
+            }
+            /* Login container styling */
+            div[data-testid="stVerticalBlock"] {
                 background-color: #1b263b;
-                padding: 40px;
+                padding: 40px 30px;
                 border-radius: 16px;
                 width: 100%;
                 max-width: 400px;
-                text-align: center;
-                box-shadow: 0 0 20px rgba(0,0,0,0.3);
-            }}
-            h2 {{
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            }
+            /* Center the image within its container */
+            div[data-testid="stImage"] {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            /* Title styling */
+            h2 {
                 color: #e0a96d;
+                text-align: center;
                 margin-bottom: 30px;
                 font-size: 24px;
-                text-align: center;
-            }}
-            div[data-baseweb="input"] > div {{
-                background-color: #415a77;
-                border-radius: 8px;
-            }}
-            input {{
+            }
+            /* Input field container */
+            div[data-testid="stTextInput"] {
+                margin-bottom: 10px;
+            }
+            /* Actual input element styling */
+            input {
                 background-color: #415a77 !important;
                 color: white !important;
+                border-radius: 8px !important;
                 border: none !important;
-                font-size: 16px;
-            }}
-            div.stButton > button {{
+                padding: 12px !important;
+                font-size: 16px !important;
+            }
+            /* Button styling */
+            div.stButton > button {
                 width: 100%;
                 background-color: #e0a96d;
                 color: #1b263b;
                 border: none;
-                padding: 12px;
-                font-size: 16px;
-                font-weight: bold;
-                border-radius: 8px;
-                cursor: pointer;
+                padding: 12px 0;
                 margin-top: 20px;
-                transition: background-color 0.3s ease;
-            }}
-            div.stButton > button:hover {{
-                background-color: #f0bb7d;
-                color: #1b263b;
-            }}
-            .login-footer {{
+                border-radius: 8px;
+                font-weight: bold;
+            }
+            /* Footer styling */
+            .login-footer {
                 margin-top: 20px;
                 color: #cbd5e1;
                 font-size: 14px;
-            }}
-            .login-footer a {{
+                text-align: center;
+            }
+            .login-footer a {
                 color: #f0bb7d;
                 text-decoration: none;
-            }}
+            }
         </style>
         """, unsafe_allow_html=True)
 
         # --- Login Form UI ---
-        # This line now reads the logo from a local file
         st.image("logo.png", width=100)
-        
         st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
         st.text_input("Email Address", placeholder="Email Address", key="username", label_visibility="collapsed")
@@ -285,13 +292,10 @@ def main_app():
                 st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
 
 # --- SCRIPT EXECUTION STARTS HERE ---
-# Initialize session state if it doesn't exist
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
-# Run the login check
 check_password()
 
-# If authenticated, show the main application
 if st.session_state["authenticated"]:
     main_app()
