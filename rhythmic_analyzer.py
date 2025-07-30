@@ -14,9 +14,7 @@ COINGECKO_OHLC_URL = "https://api.coingecko.com/api/v3/coins/{id}/ohlc"
 COINGECKO_VOL_URL = "https://api.coingecko.com/api/v3/coins/{id}/market_chart"
 COINPAPRIKA_LIST_URL = "https://api.coinpaprika.com/v1/coins"
 COINPAPRIKA_MARKET_URL = "https://api.coinpaprika.com/v1/tickers/{id}/historical"
-# New Coinbase API Endpoint
 COINBASE_API_URL = "https://api.exchange.coinbase.com"
-
 
 # === Mapping symbols to ids (Functions) ===
 def get_binance_symbols():
@@ -107,37 +105,21 @@ def get_ohlcv_from_coinpaprika(symbol: str, days=30):
     except:
         return None
 
-# --- NEW: Coinbase Fetching Function ---
 def get_ohlcv_from_coinbase(symbol: str, days=30):
-    """Fetches last 30 days of OHLCV data from Coinbase public API."""
     product_id = f"{symbol.upper()}-USD"
-    # Granularity: 86400 seconds = 1 day
     params = {"granularity": 86400}
     try:
         url = f"{COINBASE_API_URL}/products/{product_id}/candles"
         r = requests.get(url, params=params)
         r.raise_for_status()
         data = r.json()
-        if not data:
-            return None
-        # Coinbase returns [time, low, high, open, close, volume]
-        # We need to sort by time (index 0) and take the last `days`
+        if not data: return None
         data.sort(key=lambda x: x[0], reverse=True)
         recent_data = data[:days]
-        # Reverse again to have oldest first
         recent_data.reverse()
-        
         df = pd.DataFrame(recent_data, columns=["time", "low", "high", "open", "close", "volume"])
-        return {
-            "closes": df["close"].astype(float).tolist(),
-            "volumes": df["volume"].astype(float).tolist()
-        }
-    except requests.exceptions.HTTPError as e:
-        # Handles cases where the symbol doesn't exist on Coinbase (404 error)
-        # print(f"Coinbase API error for {symbol}: {e}")
-        return None
-    except Exception as e:
-        print(f"An unexpected error occurred while fetching from Coinbase for {symbol}: {e}")
+        return {"closes": df["close"].astype(float).tolist(), "volumes": df["volume"].astype(float).tolist()}
+    except:
         return None
 
 # === Unified fetcher for Rhythmic Analysis ===
