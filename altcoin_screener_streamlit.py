@@ -224,14 +224,39 @@ def main_app():
         else: st.write(style_dataframe(make_name_clickable(filtered)).to_html(escape=False), unsafe_allow_html=True)
 
     with tab2:
-        st.subheader("تحلیل عمیق بر اساس ریتم بازار")
-        if filtered.empty: st.warning("برای تحلیل ریتمیک، ابتدا باید کاندیداهایی در تب نتایج اولیه وجود داشته باشد.")
-        elif st.button("🚀 شروع تحلیل ریتمیک نهایی"):
-            with st.spinner("لطفا صبر کنید، تحلیل در حال انجام است..."):
-                recs = filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name'], PROCESSED_COLS['percent_change_7d']]].to_dict("records")
-                progress_bar = st.progress(0.0, text="آماده‌سازی برای تحلیل...")
-                status_text = st.empty()
-                results = analyze_with_rhythmic(recs, progress_bar=progress_bar, status_text=status_text)
+    st.subheader("تحلیل عمیق بر اساس ریتم بازار")
+    if filtered.empty:
+        st.warning("برای تحلیل ریتمیک، ابتدا باید کاندیداهایی در تب نتایج اولیه وجود داشته باشد.")
+    elif st.button("🚀 شروع تحلیل ریتمیک نهایی"):
+        # The spinner has been removed. The progress bar itself is the loading indicator.
+        recs = filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name'], PROCESSED_COLS['percent_change_7d']]].to_dict("records")
+        progress_bar = st.progress(0.0, text="آماده‌سازی برای تحلیل...")
+        status_text = st.empty()
+        results = analyze_with_rhythmic(recs, progress_bar=progress_bar, status_text=status_text)
+        
+        if results:
+            st.success("✅ تحلیل با موفقیت به پایان رسید!")
+            df_r = pd.DataFrame(results)
+            df_r = pd.merge(df_r, filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name']]], on=PROCESSED_COLS['symbol'], how='left')
+            passed = df_r[df_r["pass"] == True].sort_values("score", ascending=False)
+            
+            st.markdown("---")
+            st.subheader("📊 خلاصه نتایج")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("کاندیداها", f"{len(df_r):,}")
+            col2.metric("قبول‌شدگان", f"{len(passed):,}")
+            col3.metric("ردشدگان", f"{len(df_r) - len(passed):,}")
+            
+            st.markdown("---")
+            st.subheader("🏆 لیست نهایی قبول‌شدگان")
+            if passed.empty:
+                st.warning("هیچ ارزی از تحلیل ریتمیک عبور نکرد.")
+            else:
+                passed_display = make_name_clickable(passed)
+                styled_passed = style_dataframe(passed_display)
+                st.write(styled_passed.to_html(escape=False), unsafe_allow_html=True)
+        else:
+            st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
             if results:
                 st.success("✅ تحلیل با موفقیت به پایان رسید!")
                 df_r = pd.DataFrame(results)
