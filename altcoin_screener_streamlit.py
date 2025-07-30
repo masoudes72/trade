@@ -14,7 +14,7 @@ import numpy as np
 # --- PAGE CONFIG (Set once at the top) ---
 st.set_page_config(page_title="Crypto Screener", page_icon="📈", layout="wide")
 
-# --- AUTHENTICATION LOGIC WITH STABLE CSS ---
+# --- AUTHENTICATION LOGIC WITH ABSOLUTE POSITIONING CSS ---
 
 def check_password():
     """Returns `True` if the user is authenticated."""
@@ -38,49 +38,42 @@ def check_password():
 
     if not st.session_state.get("authenticated", False):
         
-        # --- Stable CSS targeting Streamlit's default containers ---
+        # --- New, more robust CSS using absolute positioning ---
         st.markdown("""
         <style>
-            /* Hide Streamlit's default elements for a cleaner look */
             #MainMenu, footer, header {visibility: hidden;}
-            
-            [data-testid="stAppViewContainer"] > .main {
-                display: flex;
-                flex-direction: column;
-                justify-content: center; /* این باید center باشد */
-                align-items: center;   /* این هم باید center باشد */
-                width: 100vw;
-                height: 100vh;
+            /* Set background for the entire app view */
+            [data-testid="stAppViewContainer"] {
                 background-color: #0d1b2a;
             }
-            
-            /* Style the container Streamlit creates for the content */
+            /* The login card - positioned absolutely in the center */
             div[data-testid="stVerticalBlock"] {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                
                 background-color: #1b263b;
                 padding: 40px 30px;
                 border-radius: 16px;
-                width: 100%;
+                width: 90%;
                 max-width: 400px;
                 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             }
-            
             /* Center the image within its Streamlit container */
             div[data-testid="stImage"] {
                 display: flex;
                 justify-content: center;
-                margin-bottom: 10px;
-                transform: translateX(65px)
+                margin-bottom: 20px;
             }
-            
             /* Title styling */
             h2 {
                 color: #e0a96d;
                 text-align: center;
-                margin-top: -10px; /* Adjust space after image */
+                margin-top: -10px;
                 margin-bottom: 30px;
                 font-size: 24px;
             }
-            
             /* Input fields styling */
             div[data-testid="stTextInput"] {
                 margin-bottom: 10px;
@@ -93,7 +86,6 @@ def check_password():
                 padding: 12px !important;
                 font-size: 16px !important;
             }
-            
             /* Button styling */
             div.stButton > button {
                 width: 100%;
@@ -106,7 +98,6 @@ def check_password():
                 border-radius: 8px;
                 margin-top: 20px;
             }
-            
             /* Footer styling */
             .login-footer {
                 margin-top: 20px;
@@ -121,11 +112,11 @@ def check_password():
         </style>
         """, unsafe_allow_html=True)
 
-        # --- Simple, Sequential UI Layout ---
-        st.image("logo.png", width=220)
-        st.markdown("<h2>viiona trader</h2>", unsafe_allow_html=True)
+        # --- UI Layout (no structural changes needed) ---
+        st.image("logo.png", width=100)
+        st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
-        st.text_input("Email Address", placeholder="username", key="username", label_visibility="collapsed")
+        st.text_input("Email Address", placeholder="Email Address", key="username", label_visibility="collapsed")
         st.text_input("Password", placeholder="Password", type="password", key="password", label_visibility="collapsed")
         
         st.button("Log In", on_click=login)
