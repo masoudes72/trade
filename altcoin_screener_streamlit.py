@@ -128,10 +128,8 @@ def main_app():
             r = requests.get(API_URL, params={'start':1,'limit':1}); r.raise_for_status(); return int(r.json()['data']['totalCount'])
         def fetch_page(start=1, limit=PER_PAGE):
             params = {'start': start, 'limit': limit, 'sortBy':'market_cap','sortType':'desc'}; r = requests.get(API_URL, params=params); r.raise_for_status(); return r.json()['data']['cryptoCurrencyList']
-        
         try: total_coins_to_fetch = fetch_total_coins()
         except Exception as e: return f"خطا در دریافت تعداد کوین‌ها: {e}"
-            
         rows, fetch_limit, start_index = [], min(total_coins_to_fetch, 10000), 1
         while start_index <= fetch_limit:
             try:
@@ -195,7 +193,7 @@ def main_app():
         max_mc = st.number_input("حداکثر مارکت کپ ($)", value=p['max_market_cap'], step=1e6, format="%d")
         min_vmc = st.slider("حداقل نسبت حجم/مارکت کپ", 0.0, 5.0, p['min_volume_mc'], step=0.01)
         max_vmc = st.slider("حداکثر نسبت حجم/مارکت کپ", 0.0, 5.0, p['max_volume_mc'], step=0.01)
-        min_ch7 = st.slider("حداقل تغییرات ۷ روزه (%)", -50.0, 50.0, p['min_change_7d'])
+        min_ch7 = st.slider("حداقل تغییرات ۷ روزه (%)", -50.0, 5.0, p['min_change_7d'])
         max_ch7 = st.slider("حداکثر تغییرات ۷ روزه (%)", -50.0, 100.0, p['max_change_7d'])
 
     with st.spinner("در حال واکشی و پردازش داده‌ها..."):
@@ -224,39 +222,15 @@ def main_app():
         else: st.write(style_dataframe(make_name_clickable(filtered)).to_html(escape=False), unsafe_allow_html=True)
 
     with tab2:
-    st.subheader("تحلیل عمیق بر اساس ریتم بازار")
-    if filtered.empty:
-        st.warning("برای تحلیل ریتمیک، ابتدا باید کاندیداهایی در تب نتایج اولیه وجود داشته باشد.")
-    elif st.button("🚀 شروع تحلیل ریتمیک نهایی"):
-        # The spinner has been removed. The progress bar itself is the loading indicator.
-        recs = filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name'], PROCESSED_COLS['percent_change_7d']]].to_dict("records")
-        progress_bar = st.progress(0.0, text="آماده‌سازی برای تحلیل...")
-        status_text = st.empty()
-        results = analyze_with_rhythmic(recs, progress_bar=progress_bar, status_text=status_text)
-        
-        if results:
-            st.success("✅ تحلیل با موفقیت به پایان رسید!")
-            df_r = pd.DataFrame(results)
-            df_r = pd.merge(df_r, filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name']]], on=PROCESSED_COLS['symbol'], how='left')
-            passed = df_r[df_r["pass"] == True].sort_values("score", ascending=False)
+        st.subheader("تحلیل عمیق بر اساس ریتم بازار")
+        if filtered.empty:
+            st.warning("برای تحلیل ریتمیک، ابتدا باید کاندیداهایی در تب نتایج اولیه وجود داشته باشد.")
+        elif st.button("🚀 شروع تحلیل ریتمیک نهایی"):
+            recs = filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name'], PROCESSED_COLS['percent_change_7d']]].to_dict("records")
+            progress_bar = st.progress(0.0, text="آماده‌سازی برای تحلیل...")
+            status_text = st.empty()
+            results = analyze_with_rhythmic(recs, progress_bar=progress_bar, status_text=status_text)
             
-            st.markdown("---")
-            st.subheader("📊 خلاصه نتایج")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("کاندیداها", f"{len(df_r):,}")
-            col2.metric("قبول‌شدگان", f"{len(passed):,}")
-            col3.metric("ردشدگان", f"{len(df_r) - len(passed):,}")
-            
-            st.markdown("---")
-            st.subheader("🏆 لیست نهایی قبول‌شدگان")
-            if passed.empty:
-                st.warning("هیچ ارزی از تحلیل ریتمیک عبور نکرد.")
-            else:
-                passed_display = make_name_clickable(passed)
-                styled_passed = style_dataframe(passed_display)
-                st.write(styled_passed.to_html(escape=False), unsafe_allow_html=True)
-        else:
-            st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
             if results:
                 st.success("✅ تحلیل با موفقیت به پایان رسید!")
                 df_r = pd.DataFrame(results)
@@ -268,7 +242,8 @@ def main_app():
                 st.markdown("---"); st.subheader("🏆 لیست نهایی قبول‌شدگان")
                 if passed.empty: st.warning("هیچ ارزی از تحلیل ریتمیک عبور نکرد.")
                 else: st.write(style_dataframe(make_name_clickable(passed)).to_html(escape=False), unsafe_allow_html=True)
-            else: st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
+            else:
+                st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
 
 # --- SCRIPT EXECUTION STARTS HERE ---
 if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
