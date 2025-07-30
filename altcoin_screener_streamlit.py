@@ -64,7 +64,8 @@ def check_password():
             div[data-testid="stImage"] {
                 display: flex;
                 justify-content: center;
-                margin-bottom: 20px;
+                margin-bottom: 10px;
+                transform: translateX(65px)
             }
             /* Title styling */
             h2 {
@@ -113,7 +114,7 @@ def check_password():
         """, unsafe_allow_html=True)
 
         # --- UI Layout (no structural changes needed) ---
-        st.image("logo.png", width=100)
+        st.image("logo.png", width=200)
         st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
         st.text_input("Email Address", placeholder="Email Address", key="username", label_visibility="collapsed")
