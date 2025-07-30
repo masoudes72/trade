@@ -16,11 +16,13 @@ st.set_page_config(page_title="Crypto Screener", page_icon="📈", layout="wide"
 
 # --- AUTHENTICATION & LOGIN PAGE UI ---
 def render_login_page():
-    # ... (This function is complete and correct, no changes needed)
     def login():
         try:
             user_credentials = st.secrets["credentials"]
-            if (st.session_state["username"] in user_credentials["usernames"] and st.session_state["password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["username"])]):
+            if (
+                st.session_state["username"] in user_credentials["usernames"]
+                and st.session_state["password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["username"])]
+            ):
                 st.session_state["authenticated"] = True
                 st.rerun()
             else:
@@ -30,17 +32,69 @@ def render_login_page():
             st.error(f"خطا در بررسی اطلاعات ورود: {e}")
             st.session_state["authenticated"] = False
     
-    st.markdown("""<style>...</style>""", unsafe_allow_html=True) # CSS kept short for brevity
+    st.markdown("""
+        <style>
+            #MainMenu, footer, header {visibility: hidden;}
+            [data-testid="stAppViewContainer"] > .main {
+                display: flex; flex-direction: column; justify-content: center; align-items: center;
+                width: 100vw; height: 100vh; background-color: #0d1b2a;
+            }
+            div[data-testid="stVerticalBlock"] {
+                background-color: #1b263b; padding: 40px 30px; border-radius: 16px;
+                width: 100%; max-width: 400px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            }
+            div[data-testid="stImage"] { display: flex; justify-content: center; margin-bottom: 20px; }
+            h2 { color: #e0a96d; text-align: center; margin-top: -10px; margin-bottom: 30px; font-size: 24px; }
+            div[data-testid="stTextInput"] { margin-bottom: 10px; }
+            input {
+                background-color: #415a77 !important; color: white !important; border-radius: 8px !important;
+                border: none !important; padding: 12px !important; font-size: 16px !important;
+            }
+            div.stButton > button {
+                width: 100%; background-color: #e0a96d; color: #1b263b; border: none; padding: 12px;
+                font-size: 16px; font-weight: bold; border-radius: 8px; margin-top: 20px;
+            }
+            .login-footer { margin-top: 20px; color: #cbd5e1; font-size: 14px; text-align: center; }
+            .login-footer a { color: #f0bb7d; text-decoration: none; }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.image("logo.png", width=100)
     st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
     st.text_input("Username", placeholder="Email Address", key="username", label_visibility="collapsed")
     st.text_input("Password", placeholder="Password", type="password", key="password", label_visibility="collapsed")
     st.button("Log In", on_click=login)
-    st.markdown("""<div class="login-footer">...</div>""", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="login-footer">
+        <p><a href="#" target="_blank">Forgot password?</a></p>
+        <p>Don’t have an account? <a href="#" target="_blank">Sign up</a></p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- MAIN APP LOGIC ---
 def main_app():
-    st.markdown("""<style>...</style>""", unsafe_allow_html=True) # Main app CSS is correct
+    st.markdown("""
+    <style>
+        .stApp { background-color: #0d1b2a; }
+        .stApp, .st-emotion-cache-1629p8f, p, label, .stMarkdown { color: #cbd5e1; }
+        [data-testid="stSidebar"] { background-color: #1b263b; }
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #e0a96d; }
+        h1, h2, h3 { color: #e0a96d; }
+        .stDataFrame { border: 1px solid #415a77; border-radius: 8px; }
+        .stDataFrame thead tr th { background-color: #415a77; color: #e0a96d; font-weight: bold; }
+        .stDataFrame tbody tr { background-color: #1b263b; }
+        .stDataFrame tbody tr:hover { background-color: #415a77; }
+        .stDataFrame tbody td { color: #cbd5e1; }
+        .stDataFrame tbody td a { color: #f0bb7d; }
+        .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+        .stTabs [data-baseweb="tab"] { background-color: #1b263b; border-radius: 8px; color: #cbd5e1; }
+        .stTabs [data-baseweb="tab"]:hover { background-color: #415a77; color: #e0a96d; }
+        .stTabs [aria-selected="true"] { background-color: #e0a96d; color: #1b263b; font-weight: bold; }
+        .stButton button { background-color: #e0a96d; color: #1b263b; font-weight: bold; border-radius: 8px; border: none; }
+        .stButton button:hover { background-color: #f0bb7d; color: #1b263b; }
+        div[data-testid="stInfo"] { background-color: rgba(224, 169, 109, 0.1); border: 1px solid #e0a96d; color: #e0a96d; }
+    </style>
+    """, unsafe_allow_html=True)
     
     st.title("📈 داشبورد غربال‌گری و تحلیل ریتمیک آلت‌کوین‌ها")
     
@@ -56,51 +110,27 @@ def main_app():
         "Aggressive": {'min_market_cap': 1e6, 'max_market_cap': 100e6, 'min_volume_mc': 0.30, 'max_volume_mc': 2.00, 'min_change_7d': -8.0, 'max_change_7d': 25.0}
     }
 
-    # --- NEW DATA FETCHING LOGIC WITH PROGRESS BAR ---
-
-    @st.cache_data(ttl=14400)
-    def fetch_page_cached(start_index):
-        """Caches the result of fetching a single page."""
-        params = {'start': start_index, 'limit': PER_PAGE, 'sortBy':'market_cap','sortType':'desc'}
-        r = requests.get(API_URL, params=params)
-        r.raise_for_status()
-        return r.json()['data']['cryptoCurrencyList']
-
-    def fetch_all_data_with_progress():
-        """Orchestrates the fetch, updates the progress bar, and returns a DataFrame."""
-        try:
-            total_coins_to_fetch = min(fetch_total_coins(), 10000)
-        except Exception as e:
-            st.sidebar.error(f"خطا در دریافت تعداد کل کوین‌ها: {e}")
-            return None
-
-        bar = st.sidebar.progress(0, text="شروع واکشی...")
-        rows = []
-        
-        for start_index in range(1, total_coins_to_fetch, PER_PAGE):
+    @st.cache_data(ttl=14400, show_spinner=False)
+    def load_or_fetch_data():
+        def fetch_total_coins():
+            r = requests.get(API_URL, params={'start':1,'limit':1}); r.raise_for_status(); return int(r.json()['data']['totalCount'])
+        def fetch_page(start=1, limit=PER_PAGE):
+            params = {'start': start, 'limit': limit, 'sortBy':'market_cap','sortType':'desc'}; r = requests.get(API_URL, params=params); r.raise_for_status(); return r.json()['data']['cryptoCurrencyList']
+        try: total_coins_to_fetch = fetch_total_coins()
+        except Exception as e: return f"خطا در دریافت تعداد کوین‌ها: {e}"
+        rows, fetch_limit, start_index = [], min(total_coins_to_fetch, 10000), 1
+        while start_index <= fetch_limit:
             try:
-                lst = fetch_page_cached(start_index)
-                if not lst:
-                    break
-                
+                lst = fetch_page(start=start_index, limit=PER_PAGE)
+                if not lst: break
                 for c in lst:
                     q = c.get('quotes', [{}])[0]
                     rows.append({'symbol': c.get('symbol'), 'name': c.get('name'), 'price': q.get('price', None), 'volume24h': q.get('volume24h', None), 'marketCap': q.get('marketCap', None), 'percentChange7d': q.get('percentChange7d', None)})
-                
-                progress = min(len(rows) / total_coins_to_fetch, 1.0)
-                bar.progress(progress, text=f"واکشی {len(rows)}/{total_coins_to_fetch} ارز...")
-                time.sleep(0.1) # A small sleep to make UI updates smooth
-            except Exception as e:
-                st.sidebar.error(f"خطا در واکشی صفحه: {e}")
-                break
-        
-        bar.progress(1.0, "واکشی کامل شد!")
+                start_index += PER_PAGE
+                time.sleep(0.5)
+            except Exception as e: return f"خطا در واکشی: {e}"
         return pd.DataFrame(rows)
 
-    def fetch_total_coins():
-        r = requests.get(API_URL, params={'start':1,'limit':1}); r.raise_for_status(); return int(r.json()['data']['totalCount'])
-
-    # --- (Other helper functions like process_dataframe, etc. remain unchanged) ---
     def process_dataframe(df: pd.DataFrame):
         if df is None or df.empty: return None
         processed_df = df.copy()
@@ -110,6 +140,7 @@ def main_app():
         for col in critical_cols: processed_df[col] = processed_df[col].replace(0, np.nan)
         processed_df.dropna(subset=NUMERIC_COLS, inplace=True)
         return processed_df
+
     def style_dataframe(df):
         def _color_change(val):
             if not isinstance(val, (int, float)): return ''; return f"color: {'#4CAF50' if val > 0 else ('#F44336' if val < 0 else 'white')}"
@@ -121,6 +152,7 @@ def main_app():
         if 'vci' in df.columns: styled = styled.map(_style_vci, subset=['vci'])
         formats = {'price': "${:,.4f}",'market_cap': "${:,.0f}",'volume_24h': "${:,.0f}",'percent_change_7d': "{:,.2f}%","mom": "{:,.2f}%", "volume_mc_ratio": "{:,.2f}", "score": "{:,.3f}"}
         return styled.format({k: v for k, v in formats.items() if k in df.columns})
+
     def make_name_clickable(df):
         df_display = df.copy()
         if 'name' not in df_display.columns: return df_display
@@ -128,34 +160,26 @@ def main_app():
         df_display['name'] = df_display.apply(lambda row: f'<a target="_blank" href="https://coinmarketcap.com/currencies/{_create_slug(row["name"])}/">{row["name"]}</a>', axis=1)
         return df_display
 
-    # --- SIDEBAR CONTROLS ---
     if st.sidebar.button("خروج از حساب"):
         st.session_state["authenticated"] = False; st.rerun()
-    
     st.sidebar.header("واکشی اطلاعات")
-    if "raw_df" not in st.session_state:
-        st.session_state.raw_df = None
-    
-    if st.sidebar.button("🔄 واکشی داده‌های جدید", type="primary"):
-        with st.spinner("لطفا صبر کنید..."):
-            st.cache_data.clear() # Clear all caches
-            st.session_state.raw_df = fetch_all_data_with_progress()
-            st.rerun()
-
+    if st.sidebar.button("🔄 پاک کردن کش و واکشی مجدد"):
+        st.cache_data.clear(); st.rerun()
     st.sidebar.header("تنظیمات فیلتر")
-    # ... (Filter controls are unchanged)
-    preset = st.sidebar.selectbox("انتخاب پریست", list(PRESETS.keys()), index=1); p = PRESETS[preset]
+    preset = st.sidebar.selectbox("انتخاب پریست", list(PRESETS.keys()), index=1)
+    p = PRESETS[preset]
     with st.sidebar.expander("⚙️ تنظیمات دستی"):
-        min_mc = st.number_input("...", value=p['min_market_cap'],...); max_mc = st.number_input("...", value=p['max_market_cap'],...)
-        min_vmc = st.slider("...", 0.0, 5.0, p['min_volume_mc'],...); max_vmc = st.slider("...", 0.0, 5.0, p['max_volume_mc'],...)
-        min_ch7 = st.slider("...", -50.0, 50.0, p['min_change_7d']); max_ch7 = st.slider("...", -50.0, 100.0, p['max_change_7d'])
+        min_mc = st.number_input("حداقل مارکت کپ ($)", value=p['min_market_cap'], step=1e6, format="%d")
+        max_mc = st.number_input("حداکثر مارکت کپ ($)", value=p['max_market_cap'], step=1e6, format="%d")
+        min_vmc = st.slider("حداقل نسبت حجم/مارکت کپ", 0.0, 5.0, p['min_volume_mc'], step=0.01)
+        max_vmc = st.slider("حداکثر نسبت حجم/مارکت کپ", 0.0, 5.0, p['max_volume_mc'], step=0.01)
+        min_ch7 = st.slider("حداقل تغییرات ۷ روزه (%)", -50.0, 50.0, p['min_change_7d'])
+        max_ch7 = st.slider("حداکثر تغییرات ۷ روزه (%)", -50.0, 100.0, p['max_change_7d'])
 
-    # --- DATA LOADING AND PROCESSING ---
-    if st.session_state.raw_df is None:
-        st.info("📊 برای شروع، لطفاً روی دکمه «واکشی داده‌های جدید» در سایدبار کلیک کنید.")
-        st.stop()
-    
-    raw_df = st.session_state.raw_df
+    with st.spinner("در حال واکشی و پردازش داده‌ها..."):
+        raw_df = load_or_fetch_data()
+    if isinstance(raw_df, str): st.error(raw_df); st.stop()
+    if raw_df is None or raw_df.empty: st.error("خطا در واکشی داده‌ها."); st.stop()
     df = process_dataframe(raw_df)
     if df is None or df.empty: st.warning("هیچ ارز معتبری برای تحلیل یافت نشد."); st.stop()
         
@@ -163,10 +187,33 @@ def main_app():
     st.sidebar.metric("تعداد کل ارزهای واکشی شده (خام)", f"{len(raw_df):,}")
     st.sidebar.metric("تعداد ارزهای معتبر (پس از پاکسازی)", f"{len(df):,}")
 
-    # ... (The rest of the app, filtering, tabs, rhythmic analysis, etc., is unchanged)
-    filter_params = {'min_market_cap': min_mc, ...}; df['volume_mc_ratio'] = df[...] / (df[...] + 1e-9)
-    filtered = df[(df[...] >= filter_params[...]) & ...]
+    filter_params = {'min_market_cap': min_mc, 'max_market_cap': max_mc, 'min_volume_mc': min_vmc,'max_volume_mc': max_vmc, 'min_change_7d': min_ch7, 'max_change_7d': max_ch7}
+    df['volume_mc_ratio'] = df[PROCESSED_COLS['volume_24h']] / (df[PROCESSED_COLS['market_cap']] + 1e-9)
+    filtered = df[(df[PROCESSED_COLS['market_cap']] >= filter_params['min_market_cap']) & (df[PROCESSED_COLS['market_cap']] <= filter_params['max_market_cap']) & (df['volume_mc_ratio'] >= filter_params['min_volume_mc']) & (df['volume_mc_ratio'] <= filter_params['max_volume_mc']) & (df[PROCESSED_COLS['percent_change_7d']] >= filter_params['min_change_7d']) & (df[PROCESSED_COLS['percent_change_7d']] <= filter_params['max_change_7d'])]
     st.info(f"از مجموع **{len(df):,}** ارز معتبر بررسی شده، **{len(filtered):,}** ارز با فیلترهای شما مطابقت دارند.")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.header("داده‌های تکمیلی")
+    if st.sidebar.button("📊 واکشی ۳۰ روز اخیر از Coinbase"):
+        if filtered.empty:
+            st.sidebar.warning("ابتدا باید لیستی از ارزها را فیلتر کنید.")
+        else:
+            symbols_to_fetch = filtered['symbol'].tolist()
+            total_symbols = len(symbols_to_fetch)
+            st.sidebar.info(f"شروع واکشی برای {total_symbols} ارز از Coinbase...")
+            progress_bar = st.sidebar.progress(0, text="شروع...")
+            results = []
+            for i, symbol in enumerate(symbols_to_fetch):
+                progress_bar.progress((i + 1) / total_symbols, text=f"واکشی {symbol}...")
+                data = get_ohlcv_from_coinbase(symbol)
+                if data: results.append({'symbol': symbol, 'closes': len(data['closes']), 'volumes': sum(data['volumes']) > 0})
+                time.sleep(0.3)
+            progress_bar.progress(1.0, text="واکشی کامل شد!")
+            st.sidebar.success(f"{len(results)} ارز با موفقیت از Coinbase دریافت شد.")
+            if results:
+                with st.expander(" مشاهده نتایج واکشی از Coinbase"):
+                    st.dataframe(pd.DataFrame(results))
+    
     tab1, tab2 = st.tabs(["📄 **نتایج اولیه**", "🎯 **تحلیل ریتمیک**"])
     with tab1:
         st.subheader("لیست کاندیداهای اولیه")
@@ -174,17 +221,23 @@ def main_app():
         else: st.write(style_dataframe(make_name_clickable(filtered)).to_html(escape=False), unsafe_allow_html=True)
     with tab2:
         st.subheader("تحلیل عمیق بر اساس ریتم بازار")
-        if filtered.empty: st.warning("...")
+        if filtered.empty:
+            st.warning("برای تحلیل ریتمیک، ابتدا باید کاندیداهایی در تب نتایج اولیه وجود داشته باشد.")
         elif st.button("🚀 شروع تحلیل ریتمیک نهایی"):
-            recs = filtered[[...]].to_dict("records")
+            recs = filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name'], PROCESSED_COLS['percent_change_7d']]].to_dict("records")
             progress_bar = st.progress(0.0, text="آماده‌سازی برای تحلیل...")
             status_text = st.empty()
             results = analyze_with_rhythmic(recs, progress_bar=progress_bar, status_text=status_text)
             if results:
                 st.success("✅ تحلیل با موفقیت به پایان رسید!")
-                df_r = pd.DataFrame(results); passed = df_r[df_r["pass"] == True].sort_values("score", ascending=False)
+                df_r = pd.DataFrame(results)
+                df_r = pd.merge(df_r, filtered[[PROCESSED_COLS['symbol'], PROCESSED_COLS['name']]], on=PROCESSED_COLS['symbol'], how='left')
+                passed = df_r[df_r["pass"] == True].sort_values("score", ascending=False)
                 st.markdown("---"); st.subheader("📊 خلاصه نتایج")
-                col1, col2, col3 = st.columns(3); col1.metric("...", f"{len(df_r):,}"); col2.metric("...", f"{len(passed):,}"); col3.metric("...", f"{len(df_r) - len(passed):,}")
+                col1, col2, col3 = st.columns(3)
+                col1.metric("کاندیداها", f"{len(df_r):,}")
+                col2.metric("قبول‌شدگان", f"{len(passed):,}")
+                col3.metric("ردشدگان", f"{len(df_r) - len(passed):,}")
                 st.markdown("---"); st.subheader("🏆 لیست نهایی قبول‌شدگان")
                 if passed.empty: st.warning("هیچ ارزی از تحلیل ریتمیک عبور نکرد.")
                 else: st.write(style_dataframe(make_name_clickable(passed)).to_html(escape=False), unsafe_allow_html=True)
