@@ -12,81 +12,116 @@ import re
 import numpy as np
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Altcoin Screener Login", page_icon="📈", layout="centered")
+st.set_page_config(page_title="Crypto Screener Login", page_icon="📈", layout="centered")
 
-
-# --- AUTHENTICATION LOGIC WITH CUSTOM UI ---
+# --- AUTHENTICATION LOGIC WITH NEW CUSTOM UI ---
 
 def check_password():
-    """Returns `True` if the user has entered the correct password."""
-
-    # --- Custom CSS to style the login page ---
-    st.markdown("""
-    <style>
-        /* Center the login form */
-        .stApp {
-            background-color: #f0f2f6; /* A light gray background */
-        }
-        .main > div {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        /* Style the login container */
-        .st-emotion-cache-r421ms {
-            background-color: white;
-            padding: 2rem 3rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 450px;
-        }
-        /* Style the title */
-        h1 {
-            text-align: center;
-            margin-bottom: 0.5rem;
-        }
-        /* Style the subtitle */
-        .st-emotion-cache-1629p8f p {
-            text-align: center;
-            color: #666;
-            margin-bottom: 2rem;
-        }
-        /* Style the login button */
-        .stButton button {
-            width: 100%;
-            border-radius: 8px;
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    """Returns `True` if the user is authenticated."""
 
     def login():
         """Validates credentials and updates session state."""
-        user_credentials = st.secrets["credentials"]
-        if (
-            st.session_state["login_username"] in user_credentials["usernames"]
-            and st.session_state["login_password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["login_username"])]
-        ):
-            st.session_state["authenticated"] = True
-        else:
-            st.session_state["authenticated"] = False
-            st.error("نام کاربری یا رمز عبور اشتباه است")
+        try:
+            user_credentials = st.secrets["credentials"]
+            if (
+                st.session_state["username"] in user_credentials["usernames"]
+                and st.session_state["password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["username"])]
+            ):
+                st.session_state["authenticated"] = True
+            else:
+                st.session_state["authenticated"] = False
+                st.error("نام کاربری یا رمز عبور اشتباه است")
+        except:
+            st.error("اطلاعات ورود در Secrets تنظیم نشده است.")
 
-    # --- Main Login UI Logic ---
+    # If user is not authenticated, show the login page
     if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-        st.title("Welcome Back! 👋")
-        st.markdown("<p>برای ادامه وارد حساب کاربری خود شوید</p>", unsafe_allow_html=True)
-        
-        st.text_input("نام کاربری", key="login_username")
-        st.text_input("رمز عبور", type="password", key="login_password")
-        
-        st.button("ورود", on_click=login)
-        st.stop()
+        # Custom CSS based on the provided HTML
+        st.markdown("""
+        <style>
+            /* General body styling */
+            body {
+                background-color: #0d1b2a;
+            }
+            /* Center the main content */
+            [data-testid="stAppViewContainer"] > .main {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 2rem;
+            }
+            /* Login container styling */
+            div[data-testid="stVerticalBlock"] {
+                background-color: #1b263b;
+                padding: 40px;
+                border-radius: 16px;
+                width: 100%;
+                max-width: 400px;
+                text-align: center;
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            }
+            /* Title H1 */
+            h1 {
+                color: #e0a96d;
+                margin-bottom: 30px;
+                font-size: 28px;
+            }
+            /* Input fields styling */
+            div[data-baseweb="input"] > input {
+                background-color: #415a77;
+                color: white !important;
+                border-radius: 8px;
+                border: none;
+            }
+            /* Login Button styling */
+            div.stButton > button {
+                width: 100%;
+                background-color: #e0a96d;
+                color: #1b263b;
+                border: none;
+                padding: 12px 0;
+                margin-top: 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                transition: background-color 0.3s ease;
+            }
+            div.stButton > button:hover {
+                background-color: #f0bb7d;
+                color: #1b263b;
+            }
+            /* Footer styling */
+            .login-footer {
+                margin-top: 20px;
+                color: #cbd5e1;
+                font-size: 14px;
+            }
+            .login-footer a {
+                color: #f0bb7d;
+                text-decoration: none;
+            }
+        </style>
+        """, unsafe_allow_html=True)
 
+        # --- Login Form UI ---
+        # Note: You need to have a 'persian-cat-logo.png' file in the same directory
+        # or provide a URL to an image for st.image to work.
+        # st.image("persian-cat-logo.png", width=100)
+
+        st.title("CRYPTO FILTER")
+
+        st.text_input("Email Address", placeholder="Email Address", key="username", label_visibility="collapsed")
+        st.text_input("Password", placeholder="Password", type="password", key="password", label_visibility="collapsed")
+
+        st.button("Log In", on_click=login)
+
+        st.markdown("""
+        <div class="login-footer">
+            <p><a href="#" target="_blank">Forgot password?</a></p>
+            <p>Don’t have an account? <a href="#" target="_blank">Sign up</a></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.stop() # Stop the rest of the app from running
 
 # --- MAIN APP LOGIC (The Screener) ---
 
@@ -247,14 +282,8 @@ def main_app():
             else:
                 st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
 
+
 # --- SCRIPT EXECUTION STARTS HERE ---
-
-# Initialize session state if not already done
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-
-# Check password and display login if not authenticated
+# This is the main entry point of the app
 check_password()
-
-# If authenticated, run the main app
 main_app()
