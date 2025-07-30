@@ -124,7 +124,7 @@ def check_password():
 
         # --- Simple, Sequential UI Layout ---
         st.image("logo.png", width=220)
-        st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>viiona trader</h2>", unsafe_allow_html=True)
 
         st.text_input("Email Address", placeholder="username", key="username", label_visibility="collapsed")
         st.text_input("Password", placeholder="Password", type="password", key="password", label_visibility="collapsed")
