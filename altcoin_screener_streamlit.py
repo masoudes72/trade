@@ -70,7 +70,7 @@ def check_password():
                 display: flex;
                 justify-content: center;
                 margin-bottom: 20px;
-                transform: translateX(60px)
+                transform: translateX(80px)
             }
             
             /* Title styling */
@@ -123,7 +123,7 @@ def check_password():
         """, unsafe_allow_html=True)
 
         # --- Simple, Sequential UI Layout ---
-        st.image("logo.png", width=170)
+        st.image("logo.png", width=220)
         st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
         st.text_input("Email Address", placeholder="username", key="username", label_visibility="collapsed")
