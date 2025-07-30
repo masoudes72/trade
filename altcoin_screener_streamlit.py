@@ -70,7 +70,7 @@ def check_password():
                 display: flex;
                 justify-content: center;
                 margin-bottom: 20px;
-                transform: translateX(80px)
+                transform: translateX(70px)
             }
             
             /* Title styling */
