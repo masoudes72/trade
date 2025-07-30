@@ -69,8 +69,8 @@ def check_password():
             div[data-testid="stImage"] {
                 display: flex;
                 justify-content: center;
-                margin-bottom: 20px;
-                transform: translateX(70px)
+                margin-bottom: 10px;
+                transform: translateX(65px)
             }
             
             /* Title styling */
