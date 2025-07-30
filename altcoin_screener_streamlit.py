@@ -116,37 +116,37 @@ def main_app():
     RENAME_MAP = {RAW_COLS['volume24h']: PROCESSED_COLS['volume_24h'], RAW_COLS['marketCap']: PROCESSED_COLS['market_cap'], RAW_COLS['percentChange7d']: PROCESSED_COLS['percent_change_7d']}
     NUMERIC_COLS = [PROCESSED_COLS['price'], PROCESSED_COLS['volume_24h'], PROCESSED_COLS['market_cap'], PROCESSED_COLS['percent_change_7d']]
     
-    # --- CORRECTED PRESETS DICTIONARY ---
     PRESETS = {
         "Conservative": {'min_market_cap': 50e6, 'max_market_cap': 500e6, 'min_volume_mc': 0.10, 'max_volume_mc': 0.80, 'min_change_7d': -2.0, 'max_change_7d': 12.0},
         "Balanced": {'min_market_cap': 10e6, 'max_market_cap': 150e6, 'min_volume_mc': 0.20, 'max_volume_mc': 1.00, 'min_change_7d': -2.0, 'max_change_7d': 15.0},
         "Aggressive": {'min_market_cap': 1e6, 'max_market_cap': 100e6, 'min_volume_mc': 0.30, 'max_volume_mc': 2.00, 'min_change_7d': -8.0, 'max_change_7d': 25.0}
     }
 
-    @st.cache_data(ttl=14400)
+    @st.cache_data(ttl=14400, show_spinner=False)
     def load_or_fetch_data():
         def fetch_total_coins():
             r = requests.get(API_URL, params={'start':1,'limit':1}); r.raise_for_status(); return int(r.json()['data']['totalCount'])
         def fetch_page(start=1, limit=PER_PAGE):
             params = {'start': start, 'limit': limit, 'sortBy':'market_cap','sortType':'desc'}; r = requests.get(API_URL, params=params); r.raise_for_status(); return r.json()['data']['cryptoCurrencyList']
-        with st.spinner("در حال واکشی تازه‌ترین داده‌ها..."):
-            try: total_coins_to_fetch = fetch_total_coins()
-            except Exception as e: st.error(f"خطا در دریافت تعداد کوین‌ها: {e}"); return None
-            rows, fetch_limit, start_index = [], min(total_coins_to_fetch, 10000), 1
-            while start_index <= fetch_limit:
-                try:
-                    lst = fetch_page(start=start_index, limit=PER_PAGE)
-                    if not lst: break
-                    for c in lst:
-                        q = c.get('quotes', [{}])[0]
-                        rows.append({
-                            RAW_COLS['symbol']: c.get('symbol'), RAW_COLS['name']: c.get('name'),
-                            RAW_COLS['price']: q.get('price', None), RAW_COLS['volume24h']: q.get('volume24h', None),
-                            RAW_COLS['marketCap']: q.get('marketCap', None), RAW_COLS['percentChange7d']: q.get('percentChange7d', None)
-                        })
-                    start_index += PER_PAGE
-                    time.sleep(0.5)
-                except Exception as e: st.error(f"خطا در واکشی: {e}"); break
+        
+        try: total_coins_to_fetch = fetch_total_coins()
+        except Exception as e: return f"خطا در دریافت تعداد کوین‌ها: {e}"
+            
+        rows, fetch_limit, start_index = [], min(total_coins_to_fetch, 10000), 1
+        while start_index <= fetch_limit:
+            try:
+                lst = fetch_page(start=start_index, limit=PER_PAGE)
+                if not lst: break
+                for c in lst:
+                    q = c.get('quotes', [{}])[0]
+                    rows.append({
+                        'symbol': c.get('symbol'), 'name': c.get('name'),
+                        'price': q.get('price', None), 'volume24h': q.get('volume24h', None),
+                        'marketCap': q.get('marketCap', None), 'percentChange7d': q.get('percentChange7d', None)
+                    })
+                start_index += PER_PAGE
+                time.sleep(0.5)
+            except Exception as e: return f"خطا در واکشی: {e}"
         return pd.DataFrame(rows)
 
     def process_dataframe(df: pd.DataFrame):
@@ -198,7 +198,9 @@ def main_app():
         min_ch7 = st.slider("حداقل تغییرات ۷ روزه (%)", -50.0, 50.0, p['min_change_7d'])
         max_ch7 = st.slider("حداکثر تغییرات ۷ روزه (%)", -50.0, 100.0, p['max_change_7d'])
 
-    raw_df = load_or_fetch_data()
+    with st.spinner("در حال واکشی و پردازش داده‌ها..."):
+        raw_df = load_or_fetch_data()
+    if isinstance(raw_df, str): st.error(raw_df); st.stop()
     if raw_df is None or raw_df.empty: st.error("خطا در واکشی داده‌ها."); st.stop()
     df = process_dataframe(raw_df)
     if df is None or df.empty: st.warning("هیچ ارز معتبری برای تحلیل یافت نشد."); st.stop()
