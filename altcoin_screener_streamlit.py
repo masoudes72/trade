@@ -12,39 +12,79 @@ import re
 import numpy as np
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Altcoin Screener", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Altcoin Screener Login", page_icon="📈", layout="centered")
 
 
-# --- AUTHENTICATION LOGIC ---
+# --- AUTHENTICATION LOGIC WITH CUSTOM UI ---
 
 def check_password():
     """Returns `True` if the user has entered the correct password."""
-    
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
+
+    # --- Custom CSS to style the login page ---
+    st.markdown("""
+    <style>
+        /* Center the login form */
+        .stApp {
+            background-color: #f0f2f6; /* A light gray background */
+        }
+        .main > div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Style the login container */
+        .st-emotion-cache-r421ms {
+            background-color: white;
+            padding: 2rem 3rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+        /* Style the title */
+        h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        /* Style the subtitle */
+        .st-emotion-cache-1629p8f p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        /* Style the login button */
+        .stButton button {
+            width: 100%;
+            border-radius: 8px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    def login():
+        """Validates credentials and updates session state."""
         user_credentials = st.secrets["credentials"]
-        
-        # Check if the entered username and password are correct
         if (
-            st.session_state["username"] in user_credentials["usernames"]
-            and st.session_state["password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["username"])]
+            st.session_state["login_username"] in user_credentials["usernames"]
+            and st.session_state["login_password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["login_username"])]
         ):
             st.session_state["authenticated"] = True
-            del st.session_state["password"]
-            del st.session_state["username"]
         else:
             st.session_state["authenticated"] = False
+            st.error("نام کاربری یا رمز عبور اشتباه است")
 
-    # --- Login Form ---
-    if "authenticated" not in st.session_state or st.session_state["authenticated"] is False:
-        st.text_input("Username", key="username")
-        st.text_input("Password", type="password", key="password")
-        st.button("Log in", on_click=password_entered)
-        st.stop() # Stop execution until logged in
-    
-    # If not authenticated, show a warning and stop.
-    elif st.session_state["authenticated"] is not True:
-        st.warning("لطفا نام کاربری و رمز عبور خود را وارد کنید.")
+    # --- Main Login UI Logic ---
+    if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+        st.title("Welcome Back! 👋")
+        st.markdown("<p>برای ادامه وارد حساب کاربری خود شوید</p>", unsafe_allow_html=True)
+        
+        st.text_input("نام کاربری", key="login_username")
+        st.text_input("رمز عبور", type="password", key="login_password")
+        
+        st.button("ورود", on_click=login)
         st.stop()
 
 
@@ -53,7 +93,7 @@ def check_password():
 def main_app():
     """This function contains the entire screener application."""
     
-    # --- UI & CONSTANTS ---
+    st.set_page_config(page_title="Altcoin Screener", page_icon="📈", layout="wide")
     st.title("📈 داشبورد غربال‌گری و تحلیل ریتمیک آلت‌کوین‌ها")
     
     API_URL  = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing"
@@ -70,32 +110,24 @@ def main_app():
         "Aggressive": {'min_market_cap': 1e6, 'max_market_cap': 100e6, 'min_volume_mc': 0.30, 'max_volume_mc': 2.00, 'min_change_7d': -8.0, 'max_change_7d': 25.0}
     }
 
-    # --- HELPER FUNCTIONS ---
     @st.cache_data(ttl=14400)
     def load_or_fetch_data():
-        # ... (This entire function remains unchanged)
         def fetch_total_coins():
             r = requests.get(API_URL, params={'start':1,'limit':1})
             r.raise_for_status()
             return int(r.json()['data']['totalCount'])
-
         def fetch_page(start=1, limit=PER_PAGE):
             params = {'start': start, 'limit': limit, 'sortBy':'market_cap','sortType':'desc'}
             r = requests.get(API_URL, params=params)
             r.raise_for_status()
             return r.json()['data']['cryptoCurrencyList']
-
         with st.spinner("در حال واکشی تازه‌ترین داده‌ها از سرور... (این فرآیند ممکن است چند دقیقه طول بکشد و فقط هر ۴ ساعت یکبار انجام می‌شود)"):
             try:
                 total_coins_to_fetch = fetch_total_coins()
             except Exception as e:
                 st.error(f"خطا در دریافت تعداد کل کوین‌ها: {e}")
                 return None
-            
-            rows = []
-            fetch_limit = min(total_coins_to_fetch, 10000) 
-            start_index = 1
-            
+            rows, fetch_limit, start_index = [], min(total_coins_to_fetch, 10000), 1
             while start_index <= fetch_limit:
                 try:
                     lst = fetch_page(start=start_index, limit=PER_PAGE)
@@ -108,11 +140,9 @@ def main_app():
                 except Exception as e:
                     st.error(f"خطا در واکشی: {e}")
                     break
-        
         return pd.DataFrame(rows)
 
     def process_dataframe(df: pd.DataFrame):
-        # ... (This entire function remains unchanged)
         if df is None or df.empty: return None
         processed_df = df.copy()
         processed_df.rename(columns=RENAME_MAP, inplace=True)
@@ -129,7 +159,6 @@ def main_app():
         return processed_df
 
     def style_dataframe(df):
-        # ... (This entire function remains unchanged)
         def _color_change(val):
             if not isinstance(val, (int, float)): return ''
             color = '#4CAF50' if val > 0 else ('#F44336' if val < 0 else 'white')
@@ -146,7 +175,6 @@ def main_app():
         return styled.format({k: v for k, v in formats.items() if k in df.columns})
 
     def make_name_clickable(df):
-        # ... (This entire function remains unchanged)
         df_display = df.copy()
         if 'name' not in df_display.columns: return df_display
         def _create_slug(name):
@@ -154,9 +182,6 @@ def main_app():
         df_display['name'] = df_display.apply(lambda row: f'<a target="_blank" href="https://coinmarketcap.com/currencies/{_create_slug(row["name"])}/">{row["name"]}</a>', axis=1)
         return df_display
 
-    # --- SIDEBAR & MAIN APP EXECUTION ---
-    
-    # Add a logout button to the sidebar
     if st.sidebar.button("خروج از حساب"):
         st.session_state["authenticated"] = False
         st.rerun()
@@ -175,9 +200,8 @@ def main_app():
 
     raw_df = load_or_fetch_data()
     if raw_df is None or raw_df.empty:
-        st.error("خطا در واکشی داده‌ها. لطفاً صفحه را رفرش کنید یا بعداً دوباره تلاش کنید.")
+        st.error("خطا در واکشی داده‌ها.")
         st.stop()
-
     df = process_dataframe(raw_df)
     if df is None or df.empty:
         st.warning("هیچ ارز معتبری برای تحلیل یافت نشد.")
@@ -225,7 +249,12 @@ def main_app():
 
 # --- SCRIPT EXECUTION STARTS HERE ---
 
-check_password() # First, check if user is authenticated
+# Initialize session state if not already done
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+# Check password and display login if not authenticated
+check_password()
 
 # If authenticated, run the main app
 main_app()
