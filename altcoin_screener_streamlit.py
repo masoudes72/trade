@@ -44,12 +44,11 @@ def check_password():
             /* Hide Streamlit's default elements for a cleaner look */
             #MainMenu, footer, header {visibility: hidden;}
             
-            /* Make the main container a full-screen flexbox to center content */
             [data-testid="stAppViewContainer"] > .main {
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                align-items: center;
+                justify-content: center; /* این باید center باشد */
+                align-items: center;   /* این هم باید center باشد */
                 width: 100vw;
                 height: 100vh;
                 background-color: #0d1b2a;
