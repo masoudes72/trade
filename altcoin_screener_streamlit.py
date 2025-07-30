@@ -14,7 +14,7 @@ import numpy as np
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Crypto Screener Login", page_icon="📈", layout="centered")
 
-# --- AUTHENTICATION LOGIC WITH NEW CUSTOM UI ---
+# --- AUTHENTICATION LOGIC WITH CUSTOM UI ---
 
 def check_password():
     """Returns `True` if the user is authenticated."""
@@ -37,9 +37,6 @@ def check_password():
 
     # If user is not authenticated, show the login page
     if not st.session_state.get("authenticated", False):
-        
-        # Base64 string for the logo
-        logo_base64 = "iVBORw0KGgoAAAANSUhEUgAABAAAAAQACAIAAADwf7zUAAEAAElEQVR4nFx9y4IkSY4bQM+rdNVR+v" # This is a truncated string. The full one is too long for this format. You should use a direct file path or URL if possible.
         
         # Custom CSS from your HTML, adapted for Streamlit
         st.markdown(f"""
@@ -110,7 +107,9 @@ def check_password():
         """, unsafe_allow_html=True)
 
         # --- Login Form UI ---
-        st.image(f"data:image/png;base64,{logo_base64}", width=100)
+        # This line now reads the logo from a local file
+        st.image("logo.png", width=100)
+        
         st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
         st.text_input("Email Address", placeholder="Email Address", key="username", label_visibility="collapsed")
@@ -285,8 +284,14 @@ def main_app():
             else:
                 st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
 
-
 # --- SCRIPT EXECUTION STARTS HERE ---
-# This is the main entry point of the app
+# Initialize session state if it doesn't exist
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+# Run the login check
 check_password()
-main_app()
+
+# If authenticated, show the main application
+if st.session_state["authenticated"]:
+    main_app()
