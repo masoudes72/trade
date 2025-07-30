@@ -11,10 +11,10 @@ from rhythmic_analyzer import analyze_with_rhythmic
 import re
 import numpy as np
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="Crypto Screener Login", page_icon="📈", layout="centered")
+# --- PAGE CONFIG (Set once at the top) ---
+st.set_page_config(page_title="Crypto Screener", page_icon="📈", layout="wide")
 
-# --- AUTHENTICATION LOGIC WITH NEW CUSTOM UI ---
+# --- AUTHENTICATION LOGIC WITH IMPROVED CSS ---
 
 def check_password():
     """Returns `True` if the user is authenticated."""
@@ -28,7 +28,7 @@ def check_password():
                 and st.session_state["password"] == user_credentials["passwords"][user_credentials["usernames"].index(st.session_state["username"])]
             ):
                 st.session_state["authenticated"] = True
-                st.rerun() # Rerun to show the main app
+                st.rerun()
             else:
                 st.session_state["authenticated"] = False
                 st.error("نام کاربری یا رمز عبور اشتباه است")
@@ -36,52 +36,41 @@ def check_password():
             st.error(f"خطا در بررسی اطلاعات ورود. از تنظیم بودن Secrets مطمئن شوید: {e}")
             st.session_state["authenticated"] = False
 
-    # If user is not authenticated, show the login page
     if not st.session_state.get("authenticated", False):
         
-        # --- Improved CSS for better centering and styling ---
+        # --- Improved CSS for perfect centering ---
         st.markdown("""
         <style>
-            * { box-sizing: border-box; }
-            body {
-                margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #0d1b2a;
-            }
-            /* Main container to center the form vertically and horizontally */
+            /* Hide Streamlit's default elements */
+            #MainMenu, footer, header {visibility: hidden;}
+            /* Make main container a full-screen flexbox */
             [data-testid="stAppViewContainer"] > .main {
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                width: 100%;
+                width: 100vw;
                 height: 100vh;
+                background-color: #0d1b2a;
             }
-            /* Login container styling */
-            div[data-testid="stVerticalBlock"] {
+            /* The login card container */
+            .login-container {
                 background-color: #1b263b;
-                padding: 40px 30px;
+                padding: 40px;
                 border-radius: 16px;
                 width: 100%;
                 max-width: 400px;
-                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            }
-            /* Center the image within its container */
-            div[data-testid="stImage"] {
-                display: flex;
-                justify-content: center;
-                margin-bottom: 20px;
-            }
-            /* Title styling */
-            h2 {
-                color: #e0a96d;
                 text-align: center;
+                box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            }
+            /* Title inside the card */
+            .login-container h2 {
+                color: #e0a96d;
+                margin-top: 20px;
                 margin-bottom: 30px;
                 font-size: 24px;
             }
-            /* Input field container */
-            div[data-testid="stTextInput"] {
-                margin-bottom: 10px;
-            }
-            /* Actual input element styling */
+            /* Input fields styling */
             input {
                 background-color: #415a77 !important;
                 color: white !important;
@@ -89,6 +78,7 @@ def check_password():
                 border: none !important;
                 padding: 12px !important;
                 font-size: 16px !important;
+                margin: 5px 0;
             }
             /* Button styling */
             div.stButton > button {
@@ -96,26 +86,22 @@ def check_password():
                 background-color: #e0a96d;
                 color: #1b263b;
                 border: none;
-                padding: 12px 0;
-                margin-top: 20px;
-                border-radius: 8px;
+                padding: 12px;
+                font-size: 16px;
                 font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                margin-top: 20px;
             }
             /* Footer styling */
-            .login-footer {
-                margin-top: 20px;
-                color: #cbd5e1;
-                font-size: 14px;
-                text-align: center;
-            }
-            .login-footer a {
-                color: #f0bb7d;
-                text-decoration: none;
-            }
+            .login-footer { margin-top: 20px; color: #cbd5e1; font-size: 14px; }
+            .login-footer a { color: #f0bb7d; text-decoration: none; }
         </style>
         """, unsafe_allow_html=True)
 
-        # --- Login Form UI ---
+        # --- Login Form UI wrapped in a div for styling ---
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        
         st.image("logo.png", width=100)
         st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
 
@@ -131,15 +117,16 @@ def check_password():
         </div>
         """, unsafe_allow_html=True)
 
-        st.stop() # Stop the rest of the app from running
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.stop()
 
 # --- MAIN APP LOGIC (The Screener) ---
 def main_app():
     """This function contains the entire screener application."""
     
-    st.set_page_config(page_title="Altcoin Screener", page_icon="📈", layout="wide")
     st.title("📈 داشبورد غربال‌گری و تحلیل ریتمیک آلت‌کوین‌ها")
     
+    # --- All the constants and functions for the main app ---
     API_URL  = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing"
     PER_PAGE = 100
 
@@ -290,6 +277,7 @@ def main_app():
                 else: st.write(style_dataframe(make_name_clickable(passed)).to_html(escape=False), unsafe_allow_html=True)
             else:
                 st.error("تحلیل نتیجه‌ای در بر نداشت یا با خطا مواجه شد.")
+
 
 # --- SCRIPT EXECUTION STARTS HERE ---
 if "authenticated" not in st.session_state:
