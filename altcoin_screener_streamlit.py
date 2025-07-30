@@ -14,8 +14,7 @@ import numpy as np
 # --- PAGE CONFIG (Set once at the top) ---
 st.set_page_config(page_title="Crypto Screener", page_icon="📈", layout="wide")
 
-# --- AUTHENTICATION & LOGIN PAGE UI ---
-
+# --- LOGIN PAGE UI AND AUTHENTICATION ---
 def render_login_page():
     """Renders the custom login page UI and handles authentication."""
 
@@ -37,35 +36,35 @@ def render_login_page():
             st.session_state["authenticated"] = False
 
     st.markdown("""
-    <style>
-        #MainMenu, footer, header {visibility: hidden;}
-        [data-testid="stAppViewContainer"] > .main {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            width: 100vw; height: 100vh; background-color: #0d1b2a;
-        }
-        div[data-testid="stVerticalBlock"] {
-            background-color: #1b263b; padding: 40px 30px; border-radius: 16px;
-            width: 100%; max-width: 400px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        div[data-testid="stImage"] { display: flex; justify-content: center; margin-bottom: 20px; }
-        h2 { color: #e0a96d; text-align: center; margin-top: -10px; margin-bottom: 30px; font-size: 24px; }
-        div[data-testid="stTextInput"] { margin-bottom: 10px; }
-        input {
-            background-color: #415a77 !important; color: white !important; border-radius: 8px !important;
-            border: none !important; padding: 12px !important; font-size: 16px !important;
-        }
-        div.stButton > button {
-            width: 100%; background-color: #e0a96d; color: #1b263b; border: none; padding: 12px;
-            font-size: 16px; font-weight: bold; border-radius: 8px; margin-top: 20px;
-        }
-        .login-footer { margin-top: 20px; color: #cbd5e1; font-size: 14px; text-align: center; }
-        .login-footer a { color: #f0bb7d; text-decoration: none; }
-    </style>
+        <style>
+            #MainMenu, footer, header {visibility: hidden;}
+            [data-testid="stAppViewContainer"] > .main {
+                display: flex; flex-direction: column; justify-content: center; align-items: center;
+                width: 100vw; height: 100vh; background-color: #0d1b2a;
+            }
+            div[data-testid="stVerticalBlock"] {
+                background-color: #1b263b; padding: 40px 30px; border-radius: 16px;
+                width: 100%; max-width: 400px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            }
+            div[data-testid="stImage"] { display: flex; justify-content: center; margin-bottom: 20px; }
+            h2 { color: #e0a96d; text-align: center; margin-top: -10px; margin-bottom: 30px; font-size: 24px; }
+            div[data-testid="stTextInput"] { margin-bottom: 10px; }
+            input {
+                background-color: #415a77 !important; color: white !important; border-radius: 8px !important;
+                border: none !important; padding: 12px !important; font-size: 16px !important;
+            }
+            div.stButton > button {
+                width: 100%; background-color: #e0a96d; color: #1b263b; border: none; padding: 12px;
+                font-size: 16px; font-weight: bold; border-radius: 8px; margin-top: 20px;
+            }
+            .login-footer { margin-top: 20px; color: #cbd5e1; font-size: 14px; text-align: center; }
+            .login-footer a { color: #f0bb7d; text-decoration: none; }
+        </style>
     """, unsafe_allow_html=True)
 
     st.image("logo.png", width=100)
     st.markdown("<h2>CRYPTO FILTER</h2>", unsafe_allow_html=True)
-    st.text_input("Email Address", placeholder="Email Address", key="username", label_visibility="collapsed")
+    st.text_input("Username", placeholder="Email Address", key="username", label_visibility="collapsed")
     st.text_input("Password", placeholder="Password", type="password", key="password", label_visibility="collapsed")
     st.button("Log In", on_click=login)
     st.markdown("""
@@ -82,7 +81,7 @@ def main_app():
     st.markdown("""
     <style>
         .stApp { background-color: #0d1b2a; }
-        .stApp, .st-emotion-cache-1629p8f, p, label { color: #cbd5e1; }
+        .stApp, .st-emotion-cache-1629p8f, p, label, .stMarkdown { color: #cbd5e1; }
         [data-testid="stSidebar"] { background-color: #1b263b; }
         [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #e0a96d; }
         h1, h2, h3 { color: #e0a96d; }
@@ -93,8 +92,8 @@ def main_app():
         .stDataFrame tbody td { color: #cbd5e1; }
         .stDataFrame tbody td a { color: #f0bb7d; }
         .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-        .stTabs [data-baseweb="tab"] { background-color: #1b263b; border-radius: 8px; }
-        .stTabs [data-baseweb="tab"]:hover { background-color: #415a77; }
+        .stTabs [data-baseweb="tab"] { background-color: #1b263b; border-radius: 8px; color: #cbd5e1; }
+        .stTabs [data-baseweb="tab"]:hover { background-color: #415a77; color: #e0a96d; }
         .stTabs [aria-selected="true"] { background-color: #e0a96d; color: #1b263b; font-weight: bold; }
         .stButton button { background-color: #e0a96d; color: #1b263b; font-weight: bold; border-radius: 8px; border: none; }
         .stButton button:hover { background-color: #f0bb7d; color: #1b263b; }
